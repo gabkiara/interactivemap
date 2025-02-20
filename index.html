@@ -48,11 +48,17 @@
 
 <div id="map"></div>
 
-<!-- Load Mapbox script after page load -->
+<!-- Load Mapbox script -->
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js" crossorigin="anonymous"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    window.onload = function () {
+        initializeMap();
+    };
+
+    function initializeMap() {
+        console.log("Initializing Map...");
+
         mapboxgl.accessToken = 'pk.eyJ1IjoiY2NpdGNhcHN0b25lIiwiYSI6ImNtN2NzaGtwODBoMG8ybHM3ZWZpZTJjM2wifQ.b27S_Nr3D_2qdhO_REpxiA';
 
         const map = new mapboxgl.Map({
@@ -62,86 +68,15 @@
             zoom: 2
         });
 
-        async function searchLocation() {
-            const query = document.getElementById('searchBox').value.trim(); // Trim spaces
-            if (!query) return alert("Enter a city name!");
+        map.on('load', function () {
+            console.log("Map loaded successfully!");
+        });
 
-            try {
-                // Fetch location data from Mapbox
-                const geoUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}`;
-                const geoRes = await fetch(geoUrl);
+        map.on('error', function (e) {
+            console.error("Mapbox Error:", e);
+        });
+    }
+</script>
 
-                // Check if API response is OK
-                if (!geoRes.ok) {
-                    throw new Error(`Failed to fetch location data: HTTP ${geoRes.status}`);
-                }
-
-                const geoData = await geoRes.json();
-
-                // Ensure at least one result exists
-                if (!geoData.features.length) {
-                    alert("City not found! Please try another location.");
-                    return;
-                }
-
-                const [lng, lat] = geoData.features[0].center;
-                const city = geoData.features[0].place_name;
-
-                // Fetch local time and weather concurrently
-                const [time, weather] = await Promise.all([
-                    getLocalTime(lat, lng),
-                    getWeather(lat, lng)
-                ]);
-
-                // Fly to the new location on the map
-                map.flyTo({ center: [lng, lat], zoom: 10 });
-
-                // Display a popup with city info
-                new mapboxgl.Popup()
-                    .setLngLat([lng, lat])
-                    .setHTML(`
-                        <h3>${city}</h3>
-                        <p><strong>Local Time:</strong> ${time || 'N/A'}</p>
-                        <p><strong>Weather:</strong> ${weather || 'N/A'}</p>
-                    `)
-                    .addTo(map);
-
-            } catch (error) {
-                console.error("Search Error:", error);
-                alert("An error occurred while searching. Please try again.");
-            }
-        }
-
-        async function getLocalTime(lat, lng) {
-            try {
-                const apiKey = "NVSAMVM1VC3R";
-                const url = `https://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${lat}&lng=${lng}`;
-                const res = await fetch(url);
-                
-                if (!res.ok) throw new Error(`Failed to fetch time data: HTTP ${res.status}`);
-                
-                const data = await res.json();
-                return data.formatted || "Time Unavailable";
-            } catch (error) {
-                console.error("Time API Error:", error);
-                return "Time Unavailable (API issue)";
-            }
-        }
-
-        async function getWeather(lat, lng) {
-            try {
-                const apiKey = "837d9fc9c0ce6be3432a5d00e711d359";
-                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`;
-                const res = await fetch(url);
-                
-                if (!res.ok) throw new Error(`Failed to fetch weather data: HTTP ${res.status}`);
-                
-                const data = await res.json();
-                return `${data.weather[0].description}, ${data.main.temp}°C`;
-            } catch (error) {
-                console.error("Weather API Error:", error);
-                return "Weather Unavailable (API issue)";
-            }
-        }
-
-        window.searchLocation = searchLocati
+</body>
+</html>
