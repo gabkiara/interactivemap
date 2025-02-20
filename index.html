@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Map with Search, Time & Weather</title>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    
+    <!-- Mapbox Library -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js" crossorigin="anonymous"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet" />
+
     <style>
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
@@ -47,59 +50,81 @@
 <div id="map"></div>
 
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiY2NpdGNhcHN0b25lIiwiYSI6ImNtNzhsdHJmYTFheXoyeHB2aXVoeHZqYTUifQ.C_WAbtUDXIDg_B6SW72rNg';
+    document.addEventListener("DOMContentLoaded", function () {
+        mapboxgl.accessToken = 'pk.eyJ1IjoiY2NpdGNhcHN0b25lIiwiYSI6ImNtNzhsdHJmYTFheXoyeHB2aXVoeHZqYTUifQ.C_WAbtUDXIDg_B6SW72rNg';
 
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: [0, 20], 
-        zoom: 2
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 20], 
+            zoom: 2
+        });
+
+        async function searchLocation() {
+            const query = document.getElementById('searchBox').value;
+            if (!query) return alert("Enter a city name!");
+
+            try {
+                const geoUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${mapboxgl.accessToken}`;
+                const geoRes = await fetch(geoUrl);
+                if (!geoRes.ok) throw new Error("Failed to fetch location data");
+                const geoData = await geoRes.json();
+
+                if (!geoData.features.length) return alert("City not found!");
+
+                const [lng, lat] = geoData.features[0].center;
+                const city = geoData.features[0].place_name;
+
+                const time = await getLocalTime(lat, lng);
+                const weather = await getWeather(lat, lng);
+
+                map.flyTo({ center: [lng, lat], zoom: 10 });
+
+                new mapboxgl.Popup()
+                    .setLngLat([lng, lat])
+                    .setHTML(`
+                        <h3>${city}</h3>
+                        <p><strong>Local Time:</strong> ${time || 'N/A'}</p>
+                        <p><strong>Weather:</strong> ${weather || 'N/A'}</p>
+                    `)
+                    .addTo(map);
+            } catch (error) {
+                console.error("Search Error:", error);
+                alert("Error searching location. Please try again.");
+            }
+        }
+
+        async function getLocalTime(lat, lng) {
+            try {
+                const apiKey = "NVSAMVM1VC3R";
+                const url = `https://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${lat}&lng=${lng}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Failed to fetch time data");
+                const data = await res.json();
+                return data.formatted || "Time Unavailable";
+            } catch (error) {
+                console.error("Time API Error:", error);
+                return "Time Unavailable";
+            }
+        }
+
+        async function getWeather(lat, lng) {
+            try {
+                const apiKey = "837d9fc9c0ce6be3432a5d00e711d359";
+                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Failed to fetch weather data");
+                const data = await res.json();
+                return `${data.weather[0].description}, ${data.main.temp}°C`;
+            } catch (error) {
+                console.error("Weather API Error:", error);
+                return "Weather Unavailable";
+            }
+        }
+
+        // Expose function globally
+        window.searchLocation = searchLocation;
     });
-
-    async function searchLocation() {
-        const query = document.getElementById('searchBox').value;
-        if (!query) return alert("Enter a city name!");
-
-        const geoUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${mapboxgl.accessToken}`;
-        const geoRes = await fetch(geoUrl);
-        const geoData = await geoRes.json();
-
-        if (!geoData.features.length) return alert("City not found!");
-
-        const [lng, lat] = geoData.features[0].center;
-        const city = geoData.features[0].place_name;
-
-        const time = await getLocalTime(lat, lng);
-        const weather = await getWeather(lat, lng);
-
-        map.flyTo({ center: [lng, lat], zoom: 10 });
-
-        new mapboxgl.Popup()
-            .setLngLat([lng, lat])
-            .setHTML(`
-                <h3>${city}</h3>
-                <p><strong>Local Time:</strong> ${time || 'N/A'}</p>
-                <p><strong>Weather:</strong> ${weather || 'N/A'}</p>
-            `)
-            .addTo(map);
-    }
-
-
-    async function getLocalTime(lat, lng) {
-        const apiKey = "NVSAMVM1VC3R";
-        const url = `http://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${lat}&lng=${lng}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        return data.formatted || "Time Unavailable";
-    }
-
-    async function getWeather(lat, lng) {
-        const apiKey = "837d9fc9c0ce6be3432a5d00e711d359";
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`;
-        const res = await fetch(url);
-        const data = await res.json();
-        return `${data.weather[0].description}, ${data.main.temp}°C`;
-    }
 </script>
 
 </body>
