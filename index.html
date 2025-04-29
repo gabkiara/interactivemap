@@ -38,7 +38,7 @@
 </head>
 <body>
 <div id="search-container">
-    <input type="text" id="searchBox" placeholder="Search for a city...">
+    <input type="text" id="searchBox" placeholder="Search for a city..." onkeydown="handleEnter(event)">
     <button onclick="searchLocation()">Search</button>
 </div>
 <div id="map"></div>
@@ -89,6 +89,14 @@
             const [lng, lat] = geoData.features[0].center;
             const city = geoData.features[0].place_name;
 
+            // Fly to location with zoom
+            map.flyTo({
+                center: [lng, lat],
+                zoom: 10,
+                speed: 1.2,
+                curve: 1
+            });
+
             const [time, weather] = await Promise.all([
                 getLocalTime(lat, lng),
                 getWeather(lat, lng)
@@ -105,6 +113,12 @@
         } catch (error) {
             console.error("Search Error:", error);
             alert("An error occurred while searching. Please try again.");
+        }
+    }
+
+    function handleEnter(event) {
+        if (event.key === "Enter") {
+            searchLocation();
         }
     }
 
