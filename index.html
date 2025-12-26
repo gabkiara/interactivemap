@@ -52,7 +52,7 @@
 
     function initializeMap() {
         console.log("Initializing Map...");
-        mapboxgl.accessToken = 'pk.eyJ1IjoiY2NpdGNhcHN0b25lIiwiYSI6ImNtN2ltdm1qYzFjY2YyanNlY3g0aWdjMXoifQ.ZQQq_dGB_rODOqPlRV__LA';
+        mapboxgl.accessToken = 'pk.eyJ1IjoiY2NpdGNhcHN0b25lIiwiYSI6ImNtYWpldmFoNzBycXYya3MzajV6aXJnMnQifQ.eOoKwTouvhLl5HkW5zOr8w';
 
         map = new mapboxgl.Map({
             container: 'map',
@@ -89,7 +89,6 @@
             const [lng, lat] = geoData.features[0].center;
             const city = geoData.features[0].place_name;
 
-            // Fly to location with zoom
             map.flyTo({
                 center: [lng, lat],
                 zoom: 10,
@@ -138,7 +137,7 @@
 
     async function getWeather(lat, lng) {
         try {
-            const apiKey = "837d9fc9c0ce6be3432a5d00e711d359";
+            const apiKey = "cdfe588935d6870ccfe4b421bc67a242";
             const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`;
             const res = await fetch(url);
             if (!res.ok) throw new Error(`Failed to fetch weather data: HTTP ${res.status}`);
@@ -154,3 +153,4 @@
 </script>
 </body>
 </html>
+
